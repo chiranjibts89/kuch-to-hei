@@ -121,8 +121,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const loadUserProfile = async (userId: string) => {
     try {
-      console.log('Loading user profile for:', userId);
-      
       // Load user profile
       const { data: profile, error: profileError } = await supabase
         .from("user_profiles")
@@ -130,57 +128,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         .eq("id", userId)
         .single();
 
-      if (profileError) {
-        console.error('Error loading user profile:', profileError);
-        
-        // If profile doesn't exist, try to create it from auth.users
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { error: createError } = await supabase
-            .from('user_profiles')
-            .insert({
-              id: user.id,
-              email: user.email!,
-              full_name: user.user_metadata?.full_name || 'User',
-              role: user.user_metadata?.role || 'student',
-              avatar_url: user.user_metadata?.avatar_url,
-            });
-          
-          if (createError) {
-            console.error('Error creating user profile:', createError);
-            throw createError;
-          }
-          
-          // Retry loading the profile
-          const { data: newProfile, error: retryError } = await supabase
-            .from("user_profiles")
-            .select("*")
-            .eq("id", userId)
-            .single();
-          
-          if (retryError) throw retryError;
-          setUserProfile(newProfile);
-        } else {
-          throw profileError;
-        }
-      } else {
-        setUserProfile(profile);
-      }
-      
-      const currentProfile = profile || await supabase
-        .from("user_profiles")
-        .select("*")
-        .eq("id", userId)
-        .single()
-        .then(({ data }) => data);
-      
-      if (!currentProfile) {
-        throw new Error('Failed to load or create user profile');
-      }
+      if (profileError) throw profileError;
       setUserProfile(profile);
 
       // Load role-specific profile
-      if (currentProfile.role === "student") {
+      if (profile.role === "student") {
         const { data: studentData, error: studentError } = await supabase
           .from("students")
           .select("*")
@@ -189,37 +141,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
         if (studentError && studentError.code !== "PGRST116") {
           console.error("Error loading student profile:", studentError);
-          
-          // Try to create student profile if it doesn't exist
-          if (studentError.code === "PGRST116") {
-            const { error: createStudentError } = await supabase
-              .from('students')
-              .insert({
-                id: userId,
-                grade: '9th', // Default grade
-                school: 'Unknown School',
-                state: 'Unknown State',
-              });
-            
-            if (createStudentError) {
-              console.error('Error creating default student profile:', createStudentError);
-            } else {
-              // Retry loading student data
-              const { data: newStudentData } = await supabase
-                .from("students")
-                .select("*")
-                .eq("id", userId)
-                .single();
-              setStudentProfile(newStudentData);
-            }
-          }
         } else {
           setStudentProfile(studentData);
           if (studentData) {
             await loadStudentData(userId);
           }
         }
-      } else if (currentProfile.role === "teacher") {
+      } else if (profile.role === "teacher") {
         const { data: teacherData, error: teacherError } = await supabase
           .from("teachers")
           .select("*")
@@ -228,29 +156,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
         if (teacherError && teacherError.code !== "PGRST116") {
           console.error("Error loading teacher profile:", teacherError);
-          
-          // Try to create teacher profile if it doesn't exist
-          if (teacherError.code === "PGRST116") {
-            const { error: createTeacherError } = await supabase
-              .from('teachers')
-              .insert({
-                id: userId,
-                school: 'Unknown School',
-                experience_years: 0,
-              });
-            
-            if (createTeacherError) {
-              console.error('Error creating default teacher profile:', createTeacherError);
-            } else {
-              // Retry loading teacher data
-              const { data: newTeacherData } = await supabase
-                .from("teachers")
-                .select("*")
-                .eq("id", userId)
-                .single();
-              setTeacherProfile(newTeacherData);
-            }
-          }
         } else {
           setTeacherProfile(teacherData);
         }
@@ -355,54 +260,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           data: {
             full_name: userData.fullName,
             role: userData.role,
+            // Include all necessary data for the trigger
             grade: userData.grade,
             school: userData.school,
             state: userData.state,
             subject: userData.subject,
-            experience_years: userData.experienceYears,
+            experienceYears: userData.experienceYears,
           },
         },
       });
 
       if (error) return { error };
 
-      // Wait a moment for the trigger to complete
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Manually create the role-specific profile if the trigger didn't work
-      if (data.user) {
-        try {
-          if (userData.role === 'student') {
-            const { error: studentError } = await supabase
-              .from('students')
-              .insert({
-                id: data.user.id,
-                grade: userData.grade!,
-                school: userData.school,
-                state: userData.state,
-              });
-            
-            if (studentError && studentError.code !== '23505') { // Ignore duplicate key error
-              console.error('Error creating student profile:', studentError);
-            }
-          } else if (userData.role === 'teacher') {
-            const { error: teacherError } = await supabase
-              .from('teachers')
-              .insert({
-                id: data.user.id,
-                school: userData.school,
-                subject: userData.subject,
-                experience_years: userData.experienceYears || 0,
-              });
-            
-            if (teacherError && teacherError.code !== '23505') { // Ignore duplicate key error
-              console.error('Error creating teacher profile:', teacherError);
-            }
-          }
-        } catch (profileError) {
-          console.error('Error creating role-specific profile:', profileError);
-        }
-      }
+      // The database trigger will handle creating the profiles
+      // No need to manually insert into students/teachers tables
 
       return { error: null };
     } catch (error) {

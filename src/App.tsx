@@ -76,14 +76,11 @@ const LandingWrapper: React.FC = () => {
         "Redirecting user to dashboard based on role:",
         userProfile.role
       );
-      // Add a small delay to ensure all data is loaded
-      setTimeout(() => {
-        if (userProfile.role === "student") {
-          navigate("/dashboard", { replace: true });
-        } else if (userProfile.role === "teacher") {
-          navigate("/teacher", { replace: true });
-        }
-      }, 500);
+      if (userProfile.role === "student") {
+        navigate("/dashboard", { replace: true });
+      } else if (userProfile.role === "teacher") {
+        navigate("/teacher", { replace: true });
+      }
     }
   }, [user, userProfile, loading, navigate]);
 
