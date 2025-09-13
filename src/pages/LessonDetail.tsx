@@ -24,10 +24,10 @@ const LessonDetail: React.FC = () => {
   if (!lesson) {
     return (
       <div className="text-center py-12">
-        <h1 className="text-2xl font-bold text-gray-800">Lesson not found</h1>
+        <h1 className="text-2xl font-bold text-white">Lesson not found</h1>
         <button
           onClick={() => navigate('/lessons')}
-          className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className="mt-4 px-6 py-2 bg-gradient-to-r from-[#F8D991] to-[#F6B080] text-[#091D23] rounded-lg hover:shadow-lg font-semibold"
         >
           Back to Lessons
         </button>
@@ -56,8 +56,10 @@ const LessonDetail: React.FC = () => {
     newAnswers[currentQuestion] = selectedAnswer;
     setUserAnswers(newAnswers);
 
+    let newScore = quizScore;
     if (selectedAnswer === lesson.quiz.questions[currentQuestion].correctAnswer) {
-      setQuizScore(quizScore + 1);
+      newScore = quizScore + 1;
+      setQuizScore(newScore);
     }
 
     setTimeout(() => {
@@ -66,8 +68,8 @@ const LessonDetail: React.FC = () => {
         setSelectedAnswer(null);
       } else {
         setShowResult(true);
-        if (quizScore >= Math.ceil(lesson.quiz.questions.length * 0.7)) {
-          completeLesson(lesson.id, quizScore);
+        if (newScore >= Math.ceil(lesson.quiz.questions.length * 0.7)) {
+          completeLesson(lesson.id, newScore);
         }
       }
     }, 1500);
@@ -79,6 +81,7 @@ const LessonDetail: React.FC = () => {
     setShowResult(false);
     setQuizScore(0);
     setUserAnswers([]);
+    setShowQuiz(true);
   };
 
   if (showQuiz) {
@@ -145,16 +148,15 @@ const LessonDetail: React.FC = () => {
     }
 
     const question = lesson.quiz.questions[currentQuestion];
-        <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-xl shadow-xl p-6 mb-6">
+    const hasAnswered = selectedAnswer !== null;
     const isCorrect = selectedAnswer === question.correctAnswer;
-            <h1 className="text-3xl font-bold text-white">{lesson.title}</h1>
-            <div className="flex items-center space-x-2 text-[#F8D991]">
+
+    return (
       <motion.div
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
-        className="max-w-2xl mx-auto">
-          // Make sure this line is properly closed
-          <p className="text-white/70 mb-4">{lesson.description}</p>
+        className="max-w-2xl mx-auto"
+      >
         <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-xl shadow-xl p-8">
           {/* Quiz Progress */}
           <div className="mb-6">
@@ -265,7 +267,7 @@ const LessonDetail: React.FC = () => {
           <span>Back to Lessons</span>
         </button>
         {isCompleted && (
-          <div className="flex items-center space-x-2 text-green-600">
+          <div className="flex items-center space-x-2 text-green-400">
             <CheckCircle className="h-5 w-5" />
             <span className="font-semibold">Completed</span>
           </div>
@@ -276,27 +278,27 @@ const LessonDetail: React.FC = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-xl shadow-lg p-6 mb-6"
+        className="backdrop-blur-md bg-white/10 border border-white/20 rounded-xl shadow-xl p-6 mb-6"
       >
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-3xl font-bold text-gray-800">{lesson.title}</h1>
-          <div className="flex items-center space-x-2 text-green-600">
+          <h1 className="text-3xl font-bold text-white">{lesson.title}</h1>
+          <div className="flex items-center space-x-2 text-[#F8D991]">
             <Award className="h-5 w-5" />
             <span className="font-semibold">{lesson.points} points</span>
           </div>
         </div>
-        <p className="text-gray-600 mb-4">{lesson.description}</p>
+        <p className="text-white/70 mb-4">{lesson.description}</p>
         
         {/* Progress */}
         <div className="mb-4">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-gray-600">
+            <span className="text-sm font-medium text-white/70">
               Section {currentSection + 1} of {lesson.content.sections.length}
             </span>
           </div>
-          <div className="bg-gray-200 rounded-full h-2">
+          <div className="bg-white/20 rounded-full h-2">
             <motion.div
-              className="bg-blue-600 rounded-full h-2"
+              className="bg-gradient-to-r from-[#F6B080] to-[#F8D991] rounded-full h-2"
               initial={{ width: 0 }}
               animate={{ width: `${((currentSection + 1) / lesson.content.sections.length) * 100}%` }}
             />
@@ -315,7 +317,7 @@ const LessonDetail: React.FC = () => {
         >
           <h2 className="text-2xl font-bold text-white mb-6">{currentSectionData.title}</h2>
           
-          {currentSectionData.imageUrl || lesson.image_url && (
+          {(currentSectionData.imageUrl || lesson.image_url) && (
             <img
               src={currentSectionData.imageUrl || lesson.image_url}
               alt={currentSectionData.title}

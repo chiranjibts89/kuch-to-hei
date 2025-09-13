@@ -119,7 +119,7 @@ const PointsShop: React.FC = () => {
             </div>
             <div>
               <h2 className="text-3xl font-bold text-[#F8D991]">
-                {currentStudent.ecoPoints.toLocaleString()}
+                {studentProfile.eco_points.toLocaleString()}
               </h2>
               <p className="text-white/70">Available Points</p>
             </div>
@@ -171,7 +171,7 @@ const PointsShop: React.FC = () => {
               </div>
             </div>
           </div>
-                  {studentProfile.eco_points.toLocaleString()}
+        </GlassCard>
       </motion.div>
 
       {/* Shop Items Grid */}

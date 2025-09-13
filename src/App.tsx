@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { Navigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+  useLocation,
+} from "react-router-dom";
 import Header from "./components/Header";
 import SoundPlayer from "./utils/sounds";
 import Landing from "./pages/Landing";
@@ -23,9 +29,9 @@ import { initializeData } from "./data/sampleData";
 import { AnimatePresence } from "framer-motion";
 
 // Protected Route Component
-const ProtectedRoute: React.FC<{ 
-  children: React.ReactNode; 
-  requiredRole?: 'student' | 'teacher' | 'admin';
+const ProtectedRoute: React.FC<{
+  children: React.ReactNode;
+  requiredRole?: "student" | "teacher" | "admin";
 }> = ({ children, requiredRole }) => {
   const { user, userProfile, loading } = useAuth();
 
@@ -50,26 +56,70 @@ const ProtectedRoute: React.FC<{
   return <>{children}</>;
 };
 
+// Landing Page Wrapper with Redirect Logic
+const LandingWrapper: React.FC = () => {
+  const { user, userProfile, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    console.log(
+      "LandingWrapper - User:",
+      user?.id,
+      "Profile:",
+      userProfile?.role,
+      "Loading:",
+      loading
+    );
+
+    if (!loading && user && userProfile) {
+      console.log(
+        "Redirecting user to dashboard based on role:",
+        userProfile.role
+      );
+      if (userProfile.role === "student") {
+        navigate("/dashboard", { replace: true });
+      } else if (userProfile.role === "teacher") {
+        navigate("/teacher", { replace: true });
+      }
+    }
+  }, [user, userProfile, loading, navigate]);
+
+  // Show loading while checking auth state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
+        <div className="animate-pulse text-[#F8D991] text-xl font-semibold backdrop-blur-md bg-white/10 px-6 py-3 rounded-full">
+          Loading...
+        </div>
+      </div>
+    );
+  }
+
+  // If user is authenticated, don't show landing page (navigation will happen via useEffect)
+  if (user && userProfile) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
+        <div className="animate-pulse text-[#F8D991] text-xl font-semibold backdrop-blur-md bg-white/10 px-6 py-3 rounded-full">
+          Redirecting...
+        </div>
+      </div>
+    );
+  }
+
+  // Show landing page for unauthenticated users
+  return <Landing />;
+};
+
 // App Content Component
 const AppContent: React.FC = () => {
-  const { user, userProfile } = useAuth();
-
-  // Redirect authenticated users to appropriate dashboard
-  const getDefaultRoute = () => {
-    if (user && userProfile) {
-      return userProfile.role === 'student' ? '/dashboard' : '/teacher';
-    }
-    return '/';
-  };
-
   return (
     <Router>
       <AnimatePresence mode="wait">
         <Routes>
-          <Route path="/" element={<Landing />} />
+          <Route path="/" element={<LandingWrapper />} />
           <Route path="/demo" element={<Demo />} />
           <Route path="/contact" element={<Contact />} />
-          
+
           {/* Student Routes */}
           <Route
             path="/dashboard"
@@ -196,7 +246,7 @@ const AppContent: React.FC = () => {
               </ProtectedRoute>
             }
           />
-          
+
           {/* Teacher Routes */}
           <Route
             path="/teacher"
@@ -215,6 +265,7 @@ const AppContent: React.FC = () => {
     </Router>
   );
 };
+
 function App() {
   const [isInitialized, setIsInitialized] = useState(false);
 
