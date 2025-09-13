@@ -69,19 +69,24 @@ const LoginForm: React.FC<LoginFormProps> = ({ type, onClose }) => {
         });
 
         if (error) {
+          console.error('Signup error:', error);
           setError(error.message);
         } else {
+          console.log('Signup successful, closing modal');
           onClose();
         }
       } else {
         const { error } = await signIn(email, password);
         if (error) {
+          console.error('Signin error:', error);
           setError(error.message);
         } else {
+          console.log('Signin successful, closing modal');
           onClose();
         }
       }
     } catch (err) {
+      console.error('Unexpected error:', err);
       setError('An unexpected error occurred');
     } finally {
       setLoading(false);
